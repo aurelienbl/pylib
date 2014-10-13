@@ -1,0 +1,13 @@
+The idea of this module is to provide tools to easily convert Mangle polygion files to healpix masks.
+
+
+First issue it coordinates. for this V1. we assume that the Mangle mask is alway in RA, DEC
+
+But we want to be able to produce Healpix mask both in EQU and GAL.
+
+
+Producing a EQU mask should be straightforward, nothing to do
+
+For GAL., the coordinated of the centers of the pixels have to be converted in ra, dec, to be polyid-ed again the mangle file.
+
+
