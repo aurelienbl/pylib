@@ -1,0 +1,11 @@
+This module does Fisher matrices  for CMB !!!
+
+
+It should be build fir the camb_april14 verison do do lensed NG covariance
+
+
+in abl_cmbfisher.py:
+
+there is a class: camb_config(abl_cosmo.cosmology) that defines a camb setting
+within this camb setting, one can compute the derivatives with respect to cosmological parameters, and unl/phi derivative for the NG cov.
+

@@ -1,0 +1,220 @@
+import numpy as nm
+
+
+import numpy as nm
+import matplotlib.pylab as plt
+import scipy as si
+import pycamb as pc
+from scipy import integrate as inte
+import scipy.interpolate
+import abl_lib as abl
+import tools_fisher as tf
+import abl_lensing as ablens
+import hivonscale 
+#import cosmomo as cm
+import cosmomo2 as cm
+
+import des
+
+import ker_lens as kl
+import ker_gal as kg
+import ker_shear as ks
+import EH as eh
+
+
+def cl_limber2(l,ker1, ker2,cosmo, P ):
+    return inte.quad(lambda chi:  ker1(chi,l)*ker2(chi,l) *  P((l/(chi)),cosmo.z_de_chi(chi) )/ chi**2  , 0, cosmo.chi_de_z(1100) , limit=75    )[0]
+
+
+
+
+class binned_err:
+    def __init__(self, xxSN, bin1,fsky):
+        ll=nm.arange(xxSN.clx.lmax+1)
+
+
+        llpi=ll*(ll+1)/2/nm.pi
+        lll=ll*(ll+1)
+
+        self.bin=bin1
+
+       
+        self.bin_clll=abl.binnage(bin1[0],bin1[3],xxSN.clx.clllth*lll*llpi , xxSN.cov_ll*(lll*llpi)**2)
+        self.bin_clgg=abl.binnage(bin1[0],bin1[3],xxSN.clx.clggth*ll ,   xxSN.cov_gg*ll**2)
+        self.bin_clss=abl.binnage(bin1[0],bin1[3],xxSN.clx.clssth*ll ,xxSN.cov_ss*ll**2)
+       
+        self.bin_cllg=abl.binnage(bin1[0],bin1[3],xxSN.clx.cllgth*llpi*ll**2 , xxSN.cov_lg*(llpi*ll**2)**2)
+        self.bin_clls=abl.binnage(bin1[0],bin1[3],xxSN.clx.cllsth*llpi*ll**2 , xxSN.cov_ls*(llpi*ll**2)**2)
+        self.bin_clgs=abl.binnage(bin1[0],bin1[3],xxSN.clx.clgsth*ll   , xxSN.cov_gs*(ll)**2)
+        
+
+
+        N=self.bin_clll[1].shape[0]
+
+        for i in range(0, N):
+
+            self.bin_clll[1][i]/=fsky
+            self.bin_clss[1][i]/=fsky
+            self.bin_clgg[1][i]/=fsky
+            self.bin_cllg[1][i]/=fsky
+            self.bin_clls[1][i]/=fsky
+            self.bin_clgs[1][i]/=fsky
+        
+    def plotty(self,fignum, typee, factor=1, **kwargs):
+        print kwargs
+        plt.figure(fignum)
+        Nbins=self.bin[3]+1
+        
+        if typee=='clgg':
+            plt.bar(self.bin[0][:Nbins-1],2*nm.sqrt(self.bin_clgg[1])*factor,self.bin[0][1:]-self.bin[0][:-1], bottom=self.bin_clgg[0]*factor-nm.sqrt(self.bin_clgg[1])*factor, **kwargs )
+
+        if typee=='clll':
+            plt.bar(self.bin[0][:Nbins-1],2*nm.sqrt(self.bin_clll[1])*factor,self.bin[0][1:]-self.bin[0][:-1], bottom=self.bin_clll[0]*factor-nm.sqrt(self.bin_clll[1])*factor, **kwargs )
+
+        if typee=='clss':
+            plt.bar(self.bin[0][:Nbins-1],2*nm.sqrt(self.bin_clss[1])*factor,self.bin[0][1:]-self.bin[0][:-1], bottom=self.bin_clss[0]*factor-nm.sqrt(self.bin_clss[1])*factor, **kwargs )
+
+        if typee=='cllg':
+            plt.bar(self.bin[0][:Nbins-1],2*nm.sqrt(self.bin_cllg[1])*factor,self.bin[0][1:]-self.bin[0][:-1], bottom=self.bin_cllg[0]*factor-nm.sqrt(self.bin_cllg[1])*factor, **kwargs )
+
+        if typee=='clls':
+            plt.bar(self.bin[0][:Nbins-1],2*nm.sqrt(self.bin_clls[1])*factor,self.bin[0][1:]-self.bin[0][:-1], bottom=self.bin_clls[0]*factor-nm.sqrt(self.bin_clls[1])*factor, **kwargs )
+
+        if typee=='clgs':
+            plt.bar(self.bin[0][:Nbins-1],2*nm.sqrt(self.bin_clgs[1])*factor,self.bin[0][1:]-self.bin[0][:-1], bottom=self.bin_clgs[0]*factor-nm.sqrt(self.bin_clgs[1])*factor, **kwargs )
+
+
+
+
+
+
+
+
+
+
+class cl_xcorr:
+    def __init__(self, lmax=2000,kerl='', kers='', kerg='' , pdekz='', cc='',  filename_in='',filename_out=''):
+        
+        self.lmax=lmax
+        if filename_in == '':
+            ## compute cls and store them in filename_out
+            if filename_out=='':
+                ## error must have output file
+                print 'Must have output filename'
+                return
+            print ' let s us compute stuffs'
+            if kerl=='' or kers=='' or kers=='' or cc=='' or pdekz=='':
+                print' Missins input args'
+                return
+
+            lr=nm.arange(0,lmax+1, 1)
+            NN=len(lr)
+            lr1=nm.zeros(NN)
+            self.clllth=nm.zeros(NN)
+            self.clggth=nm.zeros(NN)
+            self.clssth=nm.zeros(NN)
+            self.cllgth=nm.zeros(NN)
+            self.cllsth=nm.zeros(NN)
+            self.clgsth=nm.zeros(NN)
+
+
+
+
+            for i in range(NN):
+                print lr[i]
+                lr1[i]=lr[i]
+
+  
+                self.clllth[i]=cl_limber2(lr[i], kerl.ker, kerl.ker, cc, pdekz)
+                self.clggth[i]=cl_limber2(lr[i], kerg.ker, kerg.ker, cc, pdekz)
+                self.clssth[i]=cl_limber2(lr[i], kers.ker, kers.ker, cc, pdekz)
+                self.cllgth[i]=cl_limber2(lr[i], kerl.ker, kerg.ker, cc, pdekz)
+                self.cllsth[i]=cl_limber2(lr[i], kerl.ker, kers.ker, cc, pdekz)
+                self.clgsth[i]=cl_limber2(lr[i], kerg.ker, kers.ker, cc, pdekz)
+
+
+
+            clx=nm.zeros((6,lmax+1))
+            clx[0,:]=self.clllth
+            clx[1,:]=self.clggth
+            clx[2,:]=self.clssth                        
+            clx[3,:]=self.cllgth
+            clx[4,:]=self.cllsth
+            clx[5,:]=self.clgsth
+            clx[:,0]=0
+            nm.savetxt(filename_out, clx)
+            self.clx=clx
+        else:
+            self.clx=nm.loadtxt(filename_in)
+            self.clllth=self.clx[0,:]
+            self.clggth=self.clx[1,:]
+            self.clssth=self.clx[2,:]
+            self.cllgth=self.clx[3,:]
+            self.cllsth=self.clx[4,:]
+            self.clgsth=self.clx[5,:]
+            
+
+
+
+class xcorr_SN:
+    def __init__(self,clx, lmin, lmax, noise_l, noise_g, noise_s,  ):
+
+        self.clx=clx
+        self.lmin=lmin
+        self.lmax=lmax
+        self.noise_l=noise_l
+        self.noise_g=noise_g
+        self.noise_s=noise_s
+
+
+        ll=nm.arange(clx.lmax+1)
+        self.ll=ll
+
+        llpi=ll*(ll+1)/2/nm.pi
+        lll=ll*(ll+1)
+
+   
+       
+
+        self.cov_ll=(2./(2*ll+1))   *  (clx.clllth+ noise_l)**2
+        self.cov_gg=(2./(2*ll+1))   *  (clx.clggth+ noise_g)**2
+        self.cov_ss=(2./(2*ll+1))   *  (clx.clssth+ noise_s)**2
+        self.cov_lg=(1./(2*ll+1))   *  (clx.cllgth**2 +  (clx.clllth+noise_l)*(clx.clggth+noise_g)   )
+        self.cov_ls=(1./(2*ll+1))   *  (clx.cllsth**2 +  (clx.clllth+noise_l)*(clx.clssth+noise_s)   )
+
+        self.cov_gs=(1./(2*ll+1))   *  (clx.clgsth**2 +  (clx.clssth+noise_s)*(clx.clggth+noise_g)   )
+       
+      
+
+
+
+
+        self.sigma_ll= 1.0/nm.sqrt(sum ((clx.clllth**2 / self.cov_ll)    [lmin:lmax]))
+        self.dect_ll=1.0/self.sigma_ll
+    
+        self.sigma_gg= 1.0/nm.sqrt(sum ((clx.clggth**2 / self.cov_gg)    [lmin:lmax]))
+        self.dect_gg=1.0/self.sigma_gg
+
+        self.sigma_ss= 1.0/nm.sqrt(sum ((clx.clssth**2 / self.cov_ss)    [lmin:lmax]))
+        self.dect_ss=1.0/self.sigma_ss
+        
+        
+        
+        self.sigma_lg= 1.0/nm.sqrt(sum ((clx.cllgth**2 / self.cov_lg)    [lmin:lmax]))
+        self.dect_lg=1.0/self.sigma_lg
+        
+        self.sigma_ls= 1.0/nm.sqrt(sum ((clx.cllsth**2 / self.cov_ls)    [lmin:lmax]))
+        self.dect_ls=1.0/self.sigma_ls
+
+        self.sigma_gs= 1.0/nm.sqrt(sum ((clx.clgsth**2 / self.cov_gs)    [lmin:lmax]))
+        self.dect_gs=1.0/self.sigma_gs
+
+
+
+
+
+
+
+
+
+

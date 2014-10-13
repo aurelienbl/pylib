@@ -1,0 +1,41 @@
+This module does Fisher matrices  for CMB !!!
+
+
+It should be build fir the camb_april14 verison do do lensed NG covariance
+
+
+in abl_cmbfisher.py:
+
+there is a class: camb_config(abl_cosmo.cosmology) that defines a camb setting
+within this camb setting, one can compute the derivatives with respect to cosmological parameters, and unl/phi derivative for the NG cov.
+
+
+directories:
+
+ngcov:
+
+ngcov/. : where the final covmat will be
+ngcov/der/ where the unl/phi derivatives will be
+
+parder:
+
+parder/. : where dlen and dul will be
+
+
+
+lmax's :
+
+
+lmax in camb. l_max_scalar  in the camb param file and passed as an argument when calling fab.abl_cmbfisher.Camb_config(cc,cur_path). defauld value is 7000 (and k_max_s_ini=10000)
+
+
+lmax_cosmo_der : size of the derivative of parameters as they are created and saved!
+
+
+
+lmax_sum : maximun l, for the construction of the NG covmat, must be lower than l_max_scalar (default is 5000)
+
+
+lmax_cov : size of the cov matrix.
+
+lmax_file (default 6000): shape of the cl read and written from/to camd output files
