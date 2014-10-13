@@ -3,37 +3,6 @@ import pymangle as pym
 import healpy as hp
 
 
-def get_hpx_coord_radec(nside):
-    """outputs the coordinates of the center of the healpix pixels at a given nside. coordinates are in  RA,DEC
-    """
-
-    theta, phi=hp.pix2ang(nside, nm.arange(12*nside**2), nest=True)
-    theta=nm.pi/2 -theta
-
-    ra=phi*180/nm.pi
-    dec=theta*180/nm.pi
-
-    return ra, dec
-
-
-
-def get_hpx_coord_GAL_inradec(nside):
-    """outputs the coordinates of the center of the healpix pixels at a given nside. coordinates are rotate  in  RA,DEC
-    """
-
-
-    theta, phi=hp.pix2ang(nside, nm.arange(12*nside**2), nest=True)
-    theta=nm.pi/2 -theta
-
-    R=hp.Rotator(coord='gc')
-
-    ra, dec= R(phi*180/nm.pi, theta*180/nm.pi, lonlat=True)
-    ra=nm.mod(ra, 360)
-    return ra, dec
-
-
-
-
 
 def perturb_radec(nside, ra,dec):
     """ An issue with Mangle is that when a ra,dec is exactly on top of a mangle pixelization line, then polyid fails. This typically happens for healpix pixels in EQU as the Mangle simple pixelization basically lies on top of some of the healpix pixel centers. This function thus slightly perturbs the given radec (typically those of the hpx center). add a random value to the ra, generated from a Gaussian with sigma = size of the hpxpixel/ 100.
@@ -92,24 +61,6 @@ def get_hpx_coord_GAL_inradec(nside):
 
 
 
-
-def perturb_radec(nside, ra,dec):
-    """ An issue with Mangle is that when a ra,dec is exactly on top of a mangle pixelization line, then polyid fails. This typically happens for healpix pixels in EQU as the Mangle simple pixelization basically lies on top of some of the healpix pixel centers. This function thus slightly perturbs the given radec (typically those of the hpx center). add a random value to the ra, generated from a Gaussian with sigma = size of the hpxpixel/ 100.
-    """
-    
-    lenn=hp.nside2resol(nside, arcmin=True)/60  /100.
-    N=len(ra)
-
-
-
-  
-    ra1=ra+lenn*nm.random.rand(N)
-    ra1=nm.mod(ra1, 360)
-
-    #dec1=dec+(lenn* (nm.random.rand(N)+1))*sig2
-
-  
-    return ra1,dec
 
 
 
