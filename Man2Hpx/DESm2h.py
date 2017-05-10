@@ -1,3 +1,4 @@
+### This is somewhat a old version of this Mangle to Healpix code, and is likely not to work as is
 
 
 import matplotlib.pyplot as plt
